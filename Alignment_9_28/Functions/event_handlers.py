@@ -13,7 +13,8 @@ class EventHandlers:
         if (ax == self.ax_tif) or (ax == self.ax_npy):
             if event.inaxes == ax and event.xdata is not None and event.ydata is not None and event.button == 3:
                 if self.celltypist_mode:
-                    factor = scale_factor[1] if zoom_mode else scale_factor[0]
+                    
+                    factor = scale_factor[0] if ax == self.ax_tif else 1
                     x, y = int(event.xdata / factor), int(event.ydata / factor)
                     matching_cells = self.adata.obs[(self.adata.obs['array_col_bin'] == x) & 
                                (self.adata.obs['array_row_bin'] == y)]
@@ -25,7 +26,7 @@ class EventHandlers:
                             self.previous_scatter_tif.remove()
                         self.ax_npy.set_title(matching_cells['cell_type_subclass'].values[0])
                         self.previous_scatter_npy = self.ax_npy.scatter(x, y, color='black', s=2)
-                        self.previous_scatter_tif = self.ax_tif.scatter(x, y, color='red', s=2)
+                        self.previous_scatter_tif = self.ax_tif.scatter(x*self.tif_scale_factor[0], y*self.tif_scale_factor[0], color='red', s=2)
                     
                     else:
                         print('None')  # No match found

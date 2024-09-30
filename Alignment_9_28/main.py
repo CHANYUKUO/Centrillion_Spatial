@@ -28,7 +28,7 @@ class BrainAlignmentGUI(GUISetup, ImageProcessing, EventHandlers, Transformation
         self.tif_thumbnail, self.tif_high_thumbnail, self.npy_thumbnail, self.npy_high_thumbnail, self.x_factor,self.adata = self.input_image(tif_image_path,npy_image_path,tif_scale_factor,npy_scale_factor,spatial_dataset)
         self.tif_tile = self.tif_thumbnail
         self.npy_tile = self.npy_thumbnail
-
+        self.after_transformed=False
         self.setup_gui()
     
 

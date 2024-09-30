@@ -27,7 +27,6 @@ class Transformation:
                                                                             headlength=15
                                                                             ))
         self.ax_history.append('Vector')
-        print(self.vector_points)
 
     
 
@@ -69,6 +68,7 @@ class Transformation:
         self.ax_tif.imshow(self.tif_thumbnail, vmin=vmin, vmax=vmax, cmap='gray')
         self.tif_tile = self.tif_thumbnail
         self.tif_origin=[self.ax_tif.get_xlim()[0], self.ax_tif.get_xlim()[1],self.ax_tif.get_ylim()[0], self.ax_tif.get_ylim()[1]]
+        self.after_transformed=True
 
     def run_tps(self):
         clear_output()
@@ -109,3 +109,4 @@ class Transformation:
         self.ax_tif.set_title("HnE Image")
         self.ax_tif.imshow(self.tif_thumbnail, vmin=vmin, vmax=vmax, cmap='gray')
         self.tif_origin=[self.ax_tif.get_xlim()[0], self.ax_tif.get_xlim()[1],self.ax_tif.get_ylim()[0], self.ax_tif.get_ylim()[1]]
+        self.after_transformed=True

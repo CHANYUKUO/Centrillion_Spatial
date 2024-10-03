@@ -16,8 +16,7 @@ class Transformation:
         print([np.mean(tif_points[:,0]), np.mean(tif_points[:,1]), np.mean(npy_points[:,0]), np.mean(npy_points[:,1])])
         self.tif_points_dict = {}
         self.npy_points_dict = {}
-        factor = self.npy_scale_factor[1] if self.npy_zoom_mode else self.npy_scale_factor[0]
-        factor = self.npy_scale_factor[0] if whole_mode else self.npy_scale_factor[1]
+        factor = self.npy_scale_factor[1] if self.npy_zoom_mode and not whole_mode else self.npy_scale_factor[0]
         for vector in self.vector_points:
             point_B = (vector[0]/self.x_factor*factor, vector[1]/self.x_factor*factor)
             point_A = (vector[2]*factor, vector[3]*factor)

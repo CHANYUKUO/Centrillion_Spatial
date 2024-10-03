@@ -119,6 +119,95 @@ class MachineLearning:
         self.ax_tif.set_title('CNN_predicted Mask')
         self.ax_npy.imshow(convolv_matrix)
         self.ax_npy.set_title('Blurred Spatial Image')
+    def CNN_Object_Alignment(self,tif_high_thumbnail,npy_high_thumbnail):
+        model=ThresholdPredictorCNN()
+        print('Load Model')
+        state_dict = combine_state_dict('/media/home/ckuo/Centrillion_Spatial/Alignment_9_28/Functions/CNN_IOU_Model.pth', 2)
+        model.load_state_dict(state_dict)
+
+        model.eval()
+        # Call the function with the file path
+        print('resizing image to fit CNN-model')
+        points=[]
+        for i,target_image in enumerate([tif_high_thumbnail,npy_high_thumbnail]):
+            if i==0:
+                min_value = np.percentile(target_image, 1)
+                max_value = 224
+                tif_tile_copy = (target_image - min_value) / (max_value - min_value) * 255
+                tif_tile_copy = tif_tile_copy.astype(np.uint8)
+                inverted_image = cv2.bitwise_not(tif_tile_copy)
+                alpha = 2.0
+                beta = -100
+                enhanced_image = cv2.convertScaleAbs(inverted_image, alpha=alpha, beta=beta)
+                enhanced_image[target_image > 230] = 0
+                target_image=enhanced_image
+            
+            image = np.array(
+                Image.fromarray(target_image).resize(
+                    (int(Image_shape[2]),
+                    int(Image_shape[1])),
+                    resample=Image.LANCZOS
+                )
+            )
+            kernel = np.outer(signal.windows.gaussian(100, 25),
+                        signal.windows.gaussian(100, 25))
+            convolv_matrix = signal.fftconvolve(image, kernel, mode='same')
+            convolv_matrix = convolv_matrix / convolv_matrix.max()
+            convolv_matrix[convolv_matrix<0]=0 # assign 0 to value smaller than 0
+            
+            image=convolv_matrix
+            # Convert numpy array to torch tensor
+            image = torch.from_numpy(image).float()
+
+            # Move the tensor to the appropriate device
+            device = torch.device( "cpu")
+            image = image.to(device)
+
+            # Ensure your model is also on the same device
+            model = model.to(device)
+            print('Predicting mask threshold')
+            # Process each image independently
+            with torch.no_grad():  # Disable gradient calculation for inference
+                single_image = image.unsqueeze(0).unsqueeze(0)  # Add batch and channel dimensions
+                output = np.array(model(single_image))
+            print('Predicted output:'+str(output))
+            mask=convolv_matrix>output
+            kernel_size = 200  # Adjust this value to control the size of speckles to remove
+            kernel = np.ones((kernel_size, kernel_size), np.uint8)
+            mask_cleaned = cv2.morphologyEx(mask.astype(np.uint8), cv2.MORPH_OPEN, kernel)
+            mask = np.array(
+                Image.fromarray(mask_cleaned).resize(
+                            (int(target_image.shape[1]),
+                            int(target_image.shape[0])),
+                            resample=Image.LANCZOS
+                        )
+                    )
+            rows = np.any(mask, axis=1)
+            cols = np.any(mask, axis=0)
+            y_min, y_max = np.where(rows)[0][[0, -1]]
+            x_min, x_max = np.where(cols)[0][[0, -1]]
+            points.append([x_min,y_min,x_max,y_max])
+         # Define corners
+        corners = [
+            (0, 1),  # top-left
+            (0, 3),  # bottom-left
+            (2, 3),  # bottom-right
+            (2, 1)   # top-right
+        ]
+
+        # Assign points to dictionaries
+        for i, (x_idx, y_idx) in enumerate(corners):
+            factor = self.tif_scale_factor[1] 
+            self.tif_points_dict[i] = (points[0][x_idx] / factor, points[0][y_idx] / factor)
+            
+            factor = self.npy_scale_factor[1] 
+            self.npy_points_dict[i] = (points[1][x_idx] / factor, points[1][y_idx] / factor)
+        
+        
+
+            
+
+        
     def run_cellpose(self):
         model = models.Cellpose(model_type='cyto', gpu=self.GPU_MODE)
         print('Use GPU') if self.GPU_MODE else print('Use CPU')

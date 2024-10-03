@@ -31,7 +31,7 @@ class AutoAlignment:
         beta = -100
         enhanced_image = cv2.convertScaleAbs(inverted_image, alpha=alpha, beta=beta)
         enhanced_image[tif_tile > 230] = 0
-        cut_off=50 if self.after_transformed else 0
+        cut_off=50 
         if np.mean(enhanced_image) > cut_off:
             tif_tile_copy = np.array(
                 Image.fromarray(enhanced_image).resize(
@@ -90,20 +90,25 @@ class AutoAlignment:
         self.zoom_out()
         self.npy_zoom_mode = True
         self.tif_zoom_mode = True
-        factor = self.npy_scale_factor[0] / self.npy_scale_factor[1]
-        (row, cols,step,step_size) = (20, 20,100,1) if self.after_transformed else (4,4,1000,50) 
-        tif_thumbnail_tiles, tif_origin_list = self.split_image_into_grid(self.tif_high_thumbnail,row,cols)
-        npy_thumbnail_tiles, npy_origin_list = self.split_image_into_grid(self.npy_high_thumbnail,row,cols)
-        for i in range(len(tif_thumbnail_tiles)):
-            self.run_auto(tif_thumbnail_tiles[i], npy_thumbnail_tiles[i], npy_origin_list[i], tif_origin_list[i], step,step_size=step_size,whole_mode=True)
-            self.show_rectangle(npy_origin_list[i][0]*factor, npy_origin_list[i][2]*factor,
-                                npy_origin_list[i][1]*factor-npy_origin_list[i][0]*factor,
-                                npy_origin_list[i][3]*factor-npy_origin_list[i][2]*factor)
-            self.fig.canvas.draw()
-        self.npy_zoom_mode = False
-        self.tif_zoom_mode = False
-        print('Run TPS')
+        if self.after_transformed:
+            factor = self.npy_scale_factor[0] / self.npy_scale_factor[1]
+            (row, cols,step,step_size) = (20, 20,300,2) 
+            tif_thumbnail_tiles, tif_origin_list = self.split_image_into_grid(self.tif_high_thumbnail,row,cols)
+            npy_thumbnail_tiles, npy_origin_list = self.split_image_into_grid(self.npy_high_thumbnail,row,cols)
+            for i in range(len(tif_thumbnail_tiles)):
+                self.run_auto(tif_thumbnail_tiles[i], npy_thumbnail_tiles[i], npy_origin_list[i], tif_origin_list[i], step,step_size=step_size,whole_mode=True)
+                self.show_rectangle(npy_origin_list[i][0]*factor, npy_origin_list[i][2]*factor,
+                                    npy_origin_list[i][1]*factor-npy_origin_list[i][0]*factor,
+                                    npy_origin_list[i][3]*factor-npy_origin_list[i][2]*factor)
+                self.fig.canvas.draw()
+            self.npy_zoom_mode = False
+            self.tif_zoom_mode = False
+            print('Run Transformation')
+            
+        else:
+            self.CNN_Object_Alignment(self.tif_high_thumbnail,self.npy_high_thumbnail) #First Alignment use bounding box object detection
         self.run_tps() if self.after_transformed else self.run_affine()
+        
 
     def split_image_into_grid(self, image, rows=20, cols=20):
         if isinstance(image, np.ndarray):
